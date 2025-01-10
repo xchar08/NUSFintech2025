@@ -2,23 +2,22 @@
 const { ethers } = require("hardhat");
 
 async function main() {
-  // 1. Get signers
   const [deployer] = await ethers.getSigners();
-  console.log("Deploying with account:", deployer.address);
+  console.log("Deploying contracts with account:", deployer.address);
 
-  // 2. Use parseEther (must come from `ethers.utils`)
-  const lockedAmount = ethers.parseEther("0.001");  
-  console.log("Locked amount:", lockedAmount.toString());
+  // Deploy KYCContract
+  const KYCFactory = await ethers.getContractFactory("KYCContract");
+  const kycInstance = await KYCFactory.deploy();  // returns a Contract
+  await kycInstance.waitForDeployment();          // Ethers v6 replaces .deployed()
+  const kycAddress = await kycInstance.getAddress();
+  console.log("KYCContract deployed to:", kycAddress);
 
-  // 3. Deploy contract example
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = currentTimestampInSeconds + 60;
-
-  const Lock = await ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
-  await lock.deployed();
-
-  console.log("Lock deployed to:", lock.address);
+  // Deploy TransactionContract
+  const TxFactory = await ethers.getContractFactory("TransactionContract");
+  const txInstance = await TxFactory.deploy();    // returns a Contract
+  await txInstance.waitForDeployment();
+  const txAddress = await txInstance.getAddress();
+  console.log("TransactionContract deployed to:", txAddress);
 }
 
 main().catch((error) => {
