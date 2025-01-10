@@ -19,7 +19,6 @@ A **data-driven** and **trust-enhanced** solution that merges **smart contracts*
     - [2. Flag/Unflag an Address](#2-flagunflag-an-address)
     - [3. Update KYC Information](#3-update-kyc-information)
 - [Project Structure](#project-structure)
-- [Roadmap](#roadmap)
 - [License](#license)
 
 ---
