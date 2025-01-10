@@ -281,26 +281,6 @@ my-blockchain-ml-project
 
 ---
 
-## Roadmap
-
-1. **Enhance ML**:
-   - Add more features (historical user data, advanced user profiling).
-   - Try alternative algorithms (XGBoost, neural networks).
-
-2. **KYC Automation**:
-   - Hash user identity documents and store references on-chain.
-   - Integrate off-chain KYC providers for automated verification.
-
-3. **Compliance & AML**:
-   - Flag suspicious addresses and transactions.
-   - Add watchlists for high-risk countries.
-
-4. **Scaling**:
-   - Dockerize the Python API and ML model for load balancing.
-   - Explore Layer 2 solutions (e.g., Polygon, Arbitrum) to reduce gas costs.
-
----
-
 ## License
 
 This project is licensed under the **MIT License** – see the [LICENSE](LICENSE) file for details.
