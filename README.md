@@ -40,16 +40,16 @@ A **data-driven** and **trust-enhanced** solution that merges **smart contracts*
 
 ```mermaid
 flowchart LR
-    subgraph Off-chain
+    subgraph "Off-chain"
         DML[Enhanced ML Data]
         KYCProv[External KYC Provider]
     end
 
     A[Front-End / FinTech Apps] -->|HTTP/JSON| B[Flask API]
-    B -->|Check AML Lists + KYC| E[KYCContract]
+    B -->|Check AML Lists & KYC| E[KYCContract]
     B -->|Call ML Model| C["ML Engine (Python)"]
     C --> B
-    B -->|recordTransaction() + watchlist check| F[TransactionContract]
+    B -->|recordTransaction and watchlist check| F[TransactionContract]
     DML --> C
     KYCProv --> B
 ```
