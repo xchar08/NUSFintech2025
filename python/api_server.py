@@ -1,88 +1,155 @@
 import os
 import json
-from flask import Flask, request, jsonify
-from web3 import Web3
-from dotenv import load_dotenv
 import numpy as np
+from flask import Flask, request, jsonify
+from dotenv import load_dotenv
+from web3 import Web3
+import hashlib
 
 from ml_engine import FraudDetectionModel
 
-# Load environment variables from .env
 load_dotenv()
 
 app = Flask(__name__)
 
 #######################################
-# 1. Configure Web3
+# 1. Web3 Setup
 #######################################
 WEB3_PROVIDER = os.getenv("WEB3_PROVIDER", "https://sepolia.infura.io/v3/YOUR_ID")
 w3 = Web3(Web3.HTTPProvider(WEB3_PROVIDER))
 
-# The deployed TransactionContract address (from Hardhat logs)
-TX_CONTRACT_ADDR = os.getenv("TX_CONTRACT_ADDR", "0xYourTransactionContractAddress")
+PRIVATE_KEY = os.getenv("PRIVATE_KEY", "")
+TX_CONTRACT_ADDR = os.getenv("TX_CONTRACT_ADDR", "")
+KYC_CONTRACT_ADDR = os.getenv("KYC_CONTRACT_ADDR", "")
+MODEL_PATH = os.getenv("MODEL_PATH", "fraud_model.joblib")
 
-# Load the TransactionContract ABI from a JSON file
-# Replace "TransactionContractABI.json" with the name/ path to your ABI file
+if not w3.is_connected():
+    print("[Error] Could not connect to Web3 provider. Check WEB3_PROVIDER.")
+    exit(1)
+
+# Load the ABIs
 try:
     with open("TransactionContractABI.json", "r") as f:
         tx_abi = json.load(f)
     transaction_contract = w3.eth.contract(address=TX_CONTRACT_ADDR, abi=tx_abi)
 except FileNotFoundError:
+    print("[Error] TransactionContractABI.json not found.")
     transaction_contract = None
-    print("[Warning] TransactionContract ABI file not found. On-chain calls may fail.")
+
+try:
+    with open("KYCContractABI.json", "r") as f:
+        kyc_abi = json.load(f)
+    kyc_contract = w3.eth.contract(address=KYC_CONTRACT_ADDR, abi=kyc_abi)
+except FileNotFoundError:
+    print("[Error] KYCContractABI.json not found.")
+    kyc_contract = None
+
+if not PRIVATE_KEY:
+    print("[Warning] PRIVATE_KEY not set. Transactions may fail if signing is needed.")
 
 #######################################
-# 2. Initialize ML Model
+# 2. ML Model
 #######################################
-# You can specify your real model path if you have "fraud_model.joblib"
-model = FraudDetectionModel("fraud_model.joblib")
+model = FraudDetectionModel(MODEL_PATH)
 
 #######################################
-# 3. Define Flask Routes
+# 3. Helper Functions
 #######################################
+def sign_and_send(tx_build, private_key):
+    """
+    Utility to sign and send a transaction, then wait for receipt.
+    """
+    account = w3.eth.account.from_key(private_key)
+    sender = account.address
+    nonce = w3.eth.get_transaction_count(sender)
 
+    tx_build['nonce'] = nonce
+    tx_build['from'] = sender
+    if 'gas' not in tx_build:
+        tx_build['gas'] = 300000
+    # Removed gasPrice assignment due to unknown kwargs error
+
+    signed_tx = w3.eth.account.sign_transaction(tx_build, private_key)
+    tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    return tx_hash, receipt
+
+#######################################
+# 4. AML Watchlist Endpoints
+#######################################
+@app.route("/api/flag-address", methods=["POST"])
+def flag_address():
+    # Minimal implementation for testing
+    # Replace this with actual logic to flag/unflag addresses on-chain as needed
+    return jsonify({"status": "dummy success for flag-address"}), 200
+
+#######################################
+# 5. KYC Endpoint
+#######################################
+@app.route("/api/kyc", methods=["POST"])
+def update_kyc():
+    # Minimal implementation for testing
+    # Replace this with actual logic to update KYC information on-chain as needed
+    return jsonify({"status": "dummy success for update-kyc"}), 200
+
+#######################################
+# 6. Transaction Endpoint (with checksum handling)
+#######################################
 @app.route("/api/transaction", methods=["POST"])
 def handle_transaction():
     """
     Expects JSON:
     {
-      "amount": 100,
-      "receiver": "0xRecipientAddress...",
+      "amount": 200,
+      "receiver": "0xReceiverAddress...",
       "features": [5000, 2, 1, 0]
     }
-
-    1) Compute ML risk score using 'features'
-    2) (Optional) Interact with the transaction_contract to record data on-chain
-    3) Return the risk score or transaction hash, as needed
     """
+    if not transaction_contract:
+        return jsonify({"error": "Transaction contract not configured"}), 500
+    if not PRIVATE_KEY:
+        return jsonify({"error": "No PRIVATE_KEY set"}), 400
+
     data = request.json or {}
     amount = data.get("amount", 0)
     receiver = data.get("receiver", "")
-    features = data.get("features", [0, 0, 0, 0])
+    features = data.get("features", [])
 
-    # Convert to numpy array for the ML model
-    np_features = np.array(features, dtype=float)
+    # Convert features to numpy array for ML
+    try:
+        np_features = np.array(features, dtype=float)
+    except ValueError:
+        return jsonify({"error": "Invalid features array"}), 400
+
+    # Generate risk score
     risk_score = model.predict_score(np_features)
 
-    # If you only need the ML score, just return it here:
-    # return jsonify({"risk_score": risk_score})
+    # Convert receiver address to checksummed address
+    try:
+        receiver = w3.to_checksum_address(receiver)
+    except Exception as e:
+        return jsonify({"error": f"Invalid receiver address: {e}"}), 400
 
-    # Example: If you want to also store this info on-chain, you'll need:
-    # 1) A private key
-    # 2) A contract function call (e.g., recordTransaction)
-    # 3) Enough test ETH in that private key's address for gas
-    # 
-    # (Below is pseudo-code; adapt as needed.)
+    # Build transaction for recordTransaction(receiver, amount, risk_score)
+    try:
+        tx_build = transaction_contract.functions.recordTransaction(
+            receiver,
+            int(amount),
+            int(risk_score)
+        ).build_transaction({})
+        tx_hash, receipt = sign_and_send(tx_build, PRIVATE_KEY)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
     return jsonify({
         "status": "success",
-        "risk_score": risk_score,
-        # "transactionHash": "...",
-        # "blockNumber": ...
+        "transactionHash": tx_hash.hex(),
+        "riskScore": risk_score,
+        "blockNumber": receipt.blockNumber
     })
 
 #######################################
-# 4. Run the Flask App
+# 7. Run Flask
 #######################################
 if __name__ == "__main__":
     app.run(port=5000, debug=True)
