@@ -173,7 +173,7 @@ Your API exposes three main endpoints: `/api/transaction`, `/api/flag-address`, 
 
 **One-liner cURL**:
 ```bash
-curl -X POST http://127.0.0.1:5000/api/transaction -H "Content-Type: application/json" -d "{"amount": 200, "receiver": "0xF39Fd6e51aad88F6F4ce6Ab8827279cffFb92266", "features": [5000, 2, 1, 0]}"
+curl -X POST http://127.0.0.1:5000/api/transaction -H "Content-Type: application/json" -d "{\"amount\": 200, \"receiver\": \"0xF39fd6e51aad88F6F4ce6Ab8827279cffFb92266\", \"features\": [5000, 2, 1, 0]}"
 ```
 
 **Expected Response** (JSON):
@@ -201,7 +201,7 @@ curl -X POST http://127.0.0.1:5000/api/transaction -H "Content-Type: application
 
 **One-liner cURL**:
 ```bash
-curl -X POST http://127.0.0.1:5000/api/flag-address -H "Content-Type: application/json" -d "{"address": "0xAbCdEf1234567890abcdef1234567890abcdef12", "flag": true}"
+curl -X POST http://127.0.0.1:5000/api/flag-address -H "Content-Type: application/json" -d "{\"address\": \"0xAbCdEf1234567890abcdef1234567890abcdef12\", \"flag\": true}"
 ```
 
 **Expected Response** (JSON):
@@ -228,7 +228,7 @@ curl -X POST http://127.0.0.1:5000/api/flag-address -H "Content-Type: applicatio
 
 **One-liner cURL**:
 ```bash
-curl -X POST http://127.0.0.1:5000/api/kyc -H "Content-Type: application/json" -d "{"docHashHex": "0xYourDocumentHashHexValue", "verified": true}"
+curl -X POST http://127.0.0.1:5000/api/kyc -H "Content-Type: application/json" -d "{\"docHashHex\": \"0xYourDocumentHashHexValue\", \"verified\": true}"
 ```
 
 **Expected Response** (JSON):
