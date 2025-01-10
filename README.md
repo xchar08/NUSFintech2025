@@ -38,8 +38,8 @@ A **data-driven** and **trust-enhanced** solution that merges **smart contracts*
 ```mermaid
 flowchart LR
     A[Front-End / FinTech Apps] -->|HTTP/JSON| B[Flask API]
-    B -->|Call ML Model| C[ML Engine (Python)]
-    B -->|Web3.py| D[Smart Contracts (Ethereum)]
+    B -->|Call ML Model| C["ML Engine (Python)"]
+    B -->|Web3.py| D["Smart Contracts (Ethereum)"]
     C --> B
     D --> B
 ```
