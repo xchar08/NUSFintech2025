@@ -94,8 +94,8 @@ MODEL_PATH=fraud_model.joblib  # Path to your ML model file
 
 1. **Clone** this repository:
    ```bash
-   git clone https://github.com/yourusername/your-blockchain-ml-project.git
-   cd your-blockchain-ml-project
+   git clone https://github.com/xchar08/NUSFintech2025.git
+   cd NUSFintech2025
    ```
 
 2. **Install Node dependencies**:
